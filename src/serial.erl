@@ -26,7 +26,8 @@
 -module(serial).
 -author('mbrandt@plumlife.com').
 
--export([start/0, start/1, init/2, loop/2]).
+-export([start/1, start/2, init/2, loop/2]).
+-export([send/2, stop/1, inject/2]).
 
 priv_dir() ->
     case code:priv_dir(serial) of
@@ -36,17 +37,28 @@ priv_dir() ->
 	    D
     end.
 
-start() ->
-    start([]).
+start(Name) ->
+    start(Name, []).
 
-start(Options) -> spawn_link(serial, init, [self(), Options]).
+start(Name, Options) -> 
+	Pid = spawn_link(serial, init, [self(), Options]),
+	register(Name, Pid),
+	Pid.
+
+send(Name, Bytes) -> Name ! {send, Bytes}.
+
+stop(Name) -> Name ! stop.
+
+inject(Name, Bytes) -> Name ! {self(), {data, Bytes}}.
 
 process_options(Acc, []) -> Acc;
 process_options(Acc, [Opt|Opts]) ->
     case Opt of
     	{speed, Spd} -> process_options(Acc ++ " -s " ++ integer_to_list(Spd), Opts);
     	{tty, Name} -> process_options(Acc ++ " " ++ Name, Opts);
-    	_ -> process_options(Acc, Opts)
+    	_ -> 
+    		io:format("bad option for serial: ~p\n", Opt),
+    		process_options(Acc, Opts)
     end.
 
 init(Pid, Options) ->
