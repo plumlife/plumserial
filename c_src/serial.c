@@ -53,6 +53,12 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
+speed_t get_speed(int speed);
+void set_tty_mode(int fd, int speed);
+int read_exactly(int fd, char buf[], int nr);
+void process_args(int argc, char **argv);
+void *reader_thread(void *arg);
+
 /**********************************************************************
  * Name: get_speed
  *
