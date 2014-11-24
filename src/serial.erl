@@ -64,7 +64,7 @@ process_options(Acc, [Opt|Opts]) ->
 init(Pid, Options) ->
     process_flag(trap_exit, true),
     OptString = process_options([], Options),
-    Port = open_port({spawn, priv_dir()++"/bin/serial" ++ OptString}, [binary, {packet, 2}]),
+    Port = open_port({spawn, priv_dir()++"/serial" ++ OptString}, [binary, {packet, 2}]),
     loop(Pid, Port).
 
 loop(Pid, Port) ->
