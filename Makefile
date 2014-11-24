@@ -6,7 +6,6 @@ include erlang.mk
 
 # c_src compile flags
 CC      =`which arm-linux-gnueabi-gcc`
-CFLAGS  = -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
 LDFLAGS = -lpthread
 
 # Compile flags
