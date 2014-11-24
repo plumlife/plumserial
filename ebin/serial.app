@@ -1,13 +1,9 @@
-{application, serial,
+{application, plumserial,
  [
-  {description, ""},
+  {description, "Serial port driver"},
   {vsn, "1.0.0"},
   {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {mod, { serial, []}},
-  {modules, [serial]},
-  {env, []}
+  {applications, [kernel, stdlib]},
+  {env, []},
+  {modules, []}
  ]}.
