@@ -22,9 +22,9 @@
 
 /*
  *    -*- C -*-
- *    File:	 serial.c
- *    Author:	 Matt Brandt
- *    Created:	 Thu Nov 6, 2014
+ *    File:  serial.c
+ *    Author:    Matt Brandt
+ *    Created:   Thu Nov 6, 2014
  *    Purpose:   Provide a actual working serial port.
  */
 
@@ -52,12 +52,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
-
-speed_t get_speed(int speed);
-void set_tty_mode(int fd, int speed);
-int read_exactly(int fd, char buf[], int nr);
-void process_args(int argc, char **argv);
-void *reader_thread(void *arg);
 
 /**********************************************************************
  * Name: get_speed
@@ -112,11 +106,11 @@ void set_tty_mode(int fd, int speed)
         exit(1);
     }
     
- 	cfmakeraw(&ttymode);     
+    cfmakeraw(&ttymode);     
      /* Apply changes */
 
     cfsetspeed(&ttymode, spd);
-    ttymode.c_cflag = CS8 | CREAD | CLOCAL;
+    ttymode.c_cflag |= CLOCAL;
     
     if (tcsetattr(fd, TCSANOW, &ttymode) < 0)
     {
@@ -151,7 +145,7 @@ int read_exactly(int fd, char buf[], int nr)
 }
 
 int debug = 0;
-char *tty_name = "/dev/ttyAMA0";
+char *tty_name = "/dev/ttyAPP0";
 int speed = 115200;
 int ttyfd = -1;
 
