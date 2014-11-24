@@ -627,7 +627,7 @@ app:: $(C_SRC_ENV) $(C_SRC_OUTPUT)
 
 $(C_SRC_OUTPUT): $(SOURCE)
 	@mkdir -p priv/
-	$(c_src_verbose) $(CC) $(CFLAGS) $(SOURCE) \
+	$(c_src_verbose) $(CC) $(SOURCE) \
 		$(LDFLAGS) -o $(C_SRC_OUTPUT) $(C_SRC_OPTS)
 
 clean:: clean-c_src
