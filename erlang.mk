@@ -584,7 +584,6 @@ list-templates:
 # Configuration.
 
 C_SRC_DIR = $(CURDIR)/c_src
-C_SRC_ENV ?= $(C_SRC_DIR)/env.mk
 C_SRC_OPTS ?=
 C_SRC_OUTPUT ?= $(CURDIR)/priv/$(PROJECT).so
 
@@ -604,7 +603,6 @@ endif
 
 CFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR)
 
-LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei
 LDFLAGS += -shared
 
 # Verbosity.
@@ -630,18 +628,7 @@ app:: $(C_SRC_ENV) $(C_SRC_OUTPUT)
 $(C_SRC_OUTPUT): $(SOURCE)
 	@mkdir -p priv/
 	$(c_src_verbose) $(CC) $(CFLAGS) $(SOURCE) \
-		$(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT) $(C_SRC_OPTS)
-
-$(C_SRC_ENV):
-	@erl -noshell -noinput -eval "file:write_file(\"$(C_SRC_ENV)\", \
-		io_lib:format( \
-			\"ERTS_INCLUDE_DIR ?= ~s/erts-~s/include/~n\" \
-			\"ERL_INTERFACE_INCLUDE_DIR ?= ~s~n\" \
-			\"ERL_INTERFACE_LIB_DIR ?= ~s~n\", \
-			[code:root_dir(), erlang:system_info(version), \
-			code:lib_dir(erl_interface, include), \
-			code:lib_dir(erl_interface, lib)])), \
-		erlang:halt()."
+		$(LDFLAGS) -o $(C_SRC_OUTPUT) $(C_SRC_OPTS)
 
 clean:: clean-c_src
 
@@ -653,7 +640,6 @@ distclean:: distclean-c_src-env
 distclean-c_src-env:
 	$(gen_verbose) rm -f $(C_SRC_ENV)
 
--include $(C_SRC_ENV)
 endif
 
 # Copyright (c) 2013-2014, Loïc Hoguin <essen@ninenines.eu>

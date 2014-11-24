@@ -5,5 +5,5 @@
   {registered, []},
   {applications, [kernel, stdlib]},
   {env, []},
-  {modules, []}
+  {modules, ['serial']}
  ]}.
