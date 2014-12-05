@@ -112,8 +112,8 @@ void set_tty_mode(int fd, int speed)
     cfsetspeed(&ttymode, spd);
     ttymode.c_cflag |= CLOCAL;
     
-    tty.c_cc[VMIN] = 1;
-    tty.c_cc[VTIME] = 0;
+    ttymode.c_cc[VMIN] = 1;
+    ttymode.c_cc[VTIME] = 0;
     
     if (tcsetattr(fd, TCSANOW, &ttymode) < 0)
     {
