@@ -112,36 +112,14 @@ void set_tty_mode(int fd, int speed)
     cfsetspeed(&ttymode, spd);
     ttymode.c_cflag |= CLOCAL;
     
+    tty.c_cc[VMIN] = 1;
+    tty.c_cc[VTIME] = 0;
+    
     if (tcsetattr(fd, TCSANOW, &ttymode) < 0)
     {
         perror("tcsetattr");
         exit(1);
     }
-}
-
-
-/**********************************************************************
- * Name: read_exactly(fd, buf, nr)
- * Desc: Read exactly nr bytes and put them into buf. Return the number
- *       of bytes read, i.e. nr.
- * Returns: The number of bytes read, or 0 if stream closed.
- */
-
-int read_exactly(int fd, char buf[], int nr)
-{
-    int remaining = nr;
-    int nr_read = 0;
-    
-    while(remaining > 0)
-    {
-        ssize_t n = read(fd, &buf[nr_read], remaining);
-        
-        if( n == 0 )            /* EOF? */
-            return 0;
-        remaining -= n;
-    }
-    
-    return nr;
 }
 
 int debug = 0;
@@ -175,12 +153,13 @@ void *reader_thread(void *arg)
 {
     for(;;)
     {
-        char buf[4] = { 0, 1, 0, 0 };
+        char buf[64];
 
-        if( read(ttyfd, buf + 2, 1) == 0 )
+        int len = read(ttyfd, buf, sizeof(buf));
+        if( len == 0 )
             exit(0);
 
-        write(1, buf, 3);
+        write(1, buf, len);
     }
 }
 
@@ -204,22 +183,11 @@ int main(int argc, char *argv[])
 
     for(;;)
     {
-        char buf[1024];
+        char buf[64];
 
-        if( read_exactly(0, buf, 2) != 2 )
+        int len = read(0, buf, sizeof(buf));
+        if( len <= 0 )
             exit(0);
-
-        int len = (buf[0] << 8) + (buf[1] & 0x0ff);
-
-        if( debug )
-            fprintf(stderr, "got length: %d\n", len);
-
-        if( read_exactly(0, buf, len) != len )
-            exit(0);
-
-        buf[len] = 0;
-        if( debug )
-            fprintf(stderr, "got buffer: \"%s\"\n", buf);
 
         write(ttyfd, buf, len);
     }
