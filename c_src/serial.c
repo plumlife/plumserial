@@ -1,16 +1,16 @@
 /*
  Copyright (c) 2014 Plum Inc.
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -52,6 +52,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <unistd.h>
 
 /**********************************************************************
  * Name: get_speed
@@ -97,24 +98,24 @@ void set_tty_mode(int fd, int speed)
 {
     struct termios ttymode;
     speed_t spd = get_speed(speed);
-    
+
     /* Get ttymode */
-    
+
     if (tcgetattr(fd, &ttymode) < 0)
     {
         perror("tcgetattr");
         exit(1);
     }
-    
-    cfmakeraw(&ttymode);     
+
+    cfmakeraw(&ttymode);
      /* Apply changes */
 
     cfsetspeed(&ttymode, spd);
     ttymode.c_cflag |= CLOCAL;
-    
+
     ttymode.c_cc[VMIN] = 1;
     ttymode.c_cc[VTIME] = 0;
-    
+
     if (tcsetattr(fd, TCSANOW, &ttymode) < 0)
     {
         perror("tcsetattr");
@@ -163,33 +164,59 @@ void *reader_thread(void *arg)
     }
 }
 
+
+static int named_pipes_exist(){
+  if( access( "bleTX.fifo", F_OK ) == -1 ) {
+    return 0;
+  }
+  if( access( "bleRX.fifo", F_OK ) == -1 ) {
+    return 0;
+  }
+  return 1;
+}
+
+
+
+/*
+ * for now make this backwards compatible with the initial dimmer, where we used
+ * a serial line to communicate with the TI BLE chip. On the new dimmer, we actually
+ * communicate with a daemon (plumGATT) which is attached to the serial port. We use
+ * named pipes to communicate with the daemon. TODO: a better way to communicate?
+ */
 int main(int argc, char *argv[])
 {
     process_args(argc, argv);
-    ttyfd = open(tty_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
-    if( ttyfd < 0 )
-    {
-        fprintf(stderr, "Can't open tty %s\n", tty_name);
-        exit(1);
+
+
+    if (named_pipes_exist()){
+      fprintf(stderr, "named pipes exist, so assuming neu dimmer\n");
+      
+
+    }  else {
+        ttyfd = open(tty_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
+        if( ttyfd < 0 ){
+          fprintf(stderr, "old dimmer: Can't open tty %s  \n", tty_name);
+          exit(1);
+      }
+
+      set_tty_mode(ttyfd, speed);
+
+      fcntl(ttyfd, F_SETFL, 0);
+
+      pthread_t reader_id;
+
+      pthread_create(&reader_id, NULL, reader_thread, NULL);
+
+      for(;;)
+      {
+          char buf[64];
+
+          int len = read(0, buf, sizeof(buf));
+          if( len <= 0 )
+              exit(0);
+
+              write(ttyfd, buf, len);
+      }
     }
-
-    set_tty_mode(ttyfd, speed);
-
-    fcntl(ttyfd, F_SETFL, 0);
-
-    pthread_t reader_id;
-
-    pthread_create(&reader_id, NULL, reader_thread, NULL);
-
-    for(;;)
-    {
-        char buf[64];
-
-        int len = read(0, buf, sizeof(buf));
-        if( len <= 0 )
-            exit(0);
-
-        write(ttyfd, buf, len);
-    }
-    exit(0);
+  exit(0);
 }
