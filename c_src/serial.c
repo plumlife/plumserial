@@ -128,6 +128,12 @@ char *tty_name = "/dev/ttyAPP0";
 int speed = 115200;
 int ttyfd = -1;
 
+/*named pipes stuff */
+char *bleTX_name = "bleTX.fifo";
+char *bleRX_name = "bleRX.fifo";
+int bleTX = -1;
+int bleRX = -1;
+
 void process_args(int argc, char **argv)
 {
     while( --argc > 0 )
@@ -152,11 +158,14 @@ void process_args(int argc, char **argv)
 
 void *reader_thread(void *arg)
 {
+
+    int fd = *((int*) arg);
+
     for(;;)
     {
         char buf[64];
 
-        int len = read(ttyfd, buf, sizeof(buf));
+        int len = read(fd, buf, sizeof(buf));
         if( len == 0 )
             exit(0);
 
@@ -166,13 +175,30 @@ void *reader_thread(void *arg)
 
 
 static int named_pipes_exist(){
-  if( access( "bleTX.fifo", F_OK ) == -1 ) {
+  if( access( bleTX_name, F_OK ) == -1 ) {
     return 0;
   }
-  if( access( "bleRX.fifo", F_OK ) == -1 ) {
+  if( access( bleRX_name, F_OK ) == -1 ) {
     return 0;
   }
+
+
+
   return 1;
+}
+static int open_named_pipes(){
+
+  /* both exist ? then open them */
+  bleTX = open(bleTX_name,O_WRONLY);
+  bleRX = open(bleRX_name,O_RDONLY);
+
+  if (bleTX < 0){
+    return -1;
+  }
+  if (bleRX < 0){
+    return -1;
+  }
+  return 0;
 }
 
 
@@ -187,10 +213,24 @@ int main(int argc, char *argv[])
 {
     process_args(argc, argv);
 
-
     if (named_pipes_exist()){
       fprintf(stderr, "named pipes exist, so assuming neu dimmer\n");
-      
+      if (open_named_pipes() !=0){
+        fprintf(stderr, "failed opening named pipes!\n");
+        exit(1);
+      }
+      pthread_t reader_id;
+      pthread_create(&reader_id, NULL, reader_thread,&bleRX);
+      for(;;)
+      {
+          char buf[64];
+
+          int len = read(0, buf, sizeof(buf));
+          if( len <= 0 )
+              exit(0);
+
+              write(bleTX, buf, len);
+      }
 
     }  else {
         ttyfd = open(tty_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -205,7 +245,7 @@ int main(int argc, char *argv[])
 
       pthread_t reader_id;
 
-      pthread_create(&reader_id, NULL, reader_thread, NULL);
+      pthread_create(&reader_id, NULL, reader_thread, &ttyfd);
 
       for(;;)
       {
