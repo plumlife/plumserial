@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2014 Plum Inc.
+ Copyright (c) 2015 Plum Inc.
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -201,8 +201,6 @@ static int open_named_pipes(){
   return 0;
 }
 
-
-
 /*
  * for now make this backwards compatible with the initial dimmer, where we used
  * a serial line to communicate with the TI BLE chip. On the new dimmer, we actually
@@ -213,8 +211,9 @@ int main(int argc, char *argv[])
 {
     process_args(argc, argv);
 
-    if (named_pipes_exist()){
-      fprintf(stderr, "named pipes exist, so assuming neu dimmer\n");
+    /* workaround until we break BLE communication into a seperate module */
+    if (named_pipes_exist() && (speed != 115200)){
+      fprintf(stderr, "named pipes exist, so assuming neu dimmer + BLE\n");
       if (open_named_pipes() !=0){
         fprintf(stderr, "failed opening named pipes!\n");
         exit(1);
