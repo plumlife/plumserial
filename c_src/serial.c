@@ -23,7 +23,7 @@
 /*
  *    -*- C -*-
  *    File:  serial.c
- *    Author:    Matt Brandt
+ *    Author:    Matt Brandt, Tyler Arnold
  *    Created:   Thu Nov 6, 2014
  *    Purpose:   Provide a actual working serial port.
  */
@@ -166,8 +166,10 @@ void *reader_thread(void *arg)
         char buf[64];
 
         int len = read(fd, buf, sizeof(buf));
-        if( len == 0 )
-            exit(0);
+        if( len == 0 ){
+            fprintf(stderr,"whoops zero len!\n");	
+	    exit(0);
+	}
 
         write(1, buf, len);
     }
@@ -209,6 +211,8 @@ static int open_named_pipes(){
  */
 int main(int argc, char *argv[])
 {
+    
+    fprintf(stderr,"starting...\n");
     process_args(argc, argv);
 
     /* workaround until we break BLE communication into a seperate module */
@@ -225,13 +229,16 @@ int main(int argc, char *argv[])
           char buf[64];
 
           int len = read(0, buf, sizeof(buf));
-          if( len <= 0 )
-              exit(0);
-
+          if( len <= 0 ){
+             fprintf(stderr,"len = %d!\n",len);
+	     exit(0);
+	   }
               write(bleTX, buf, len);
       }
 
     }  else {
+ 	fprintf(stderr,"assuming this is old BLE or the PSoC..?\n");
+	/* old BLE or PSoC */ 
         ttyfd = open(tty_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
         if( ttyfd < 0 ){
           fprintf(stderr, "old dimmer: Can't open tty %s  \n", tty_name);
@@ -251,9 +258,10 @@ int main(int argc, char *argv[])
           char buf[64];
 
           int len = read(0, buf, sizeof(buf));
-          if( len <= 0 )
-              exit(0);
-
+          if( len <= 0 ){
+             fprintf(stderr,"len = %d!\n",len);
+	     exit(0);
+	  }
               write(ttyfd, buf, len);
       }
     }
