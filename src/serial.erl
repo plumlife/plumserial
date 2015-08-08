@@ -57,40 +57,28 @@ process_options(Acc, [Opt|Opts]) ->
     	{speed, Spd} -> process_options(Acc ++ " -s " ++ integer_to_list(Spd), Opts);
     	{tty, Name} -> process_options(Acc ++ " " ++ Name, Opts);
     	_ -> 
-    		io:format("bad option for serial: ~p\n", Opt),
-    		process_options(Acc, Opts)
+            io:format("bad option for serial: ~p\n", Opt),
+            process_options(Acc, Opts)
     end.
 
 init(Pid, Options) ->
     process_flag(trap_exit, true),
     OptString = process_options([], Options),
-    Port = open_port({spawn, priv_dir()++"/serial" ++ OptString}, [binary, stream]),
+    Port = open_port({spawn, [priv_dir(), "/serial", OptString]}, [binary, stream]),
     loop(Pid, Port).
 
 loop(Pid, Port) ->
     receive
-		{Port, {data, Bytes}} ->
-		    Pid ! {data, Bytes},
-		    serial:loop(Pid, Port);
-
-		{send, Bytes} ->
-			Port ! {self(), {command, Bytes}},
-		    serial:loop(Pid, Port);
-
-		stop ->
-		    stopped;
-
-		{'EXIT', Port, Why} ->
-		    io:format("Port exited with reason ~w~n", [Why]),
-		    exit(Why);
-
-		{'EXIT', Linked, Why} ->
-		    io:format("Linked ~w exited with reason ~w~n", [Linked, Why]),
-		    exit(Why);
-
-		OtherError ->
-		    io:format("Received unknown message ~w~n", [OtherError]),
-		    serial:loop(Pid, Port)
-    end.
-
-    
+        {Port, {data, Bytes}} ->
+            Pid ! {data, Bytes};
+        {send, Bytes} ->
+            Port ! {self(), {command, Bytes}};
+        stop ->
+            stopped;
+        {'EXIT', _, Why} ->
+            io:format("Exited with reason ~p", [Why]),
+            exit(Why);
+        OtherError ->
+            io:format("Received unknown message ~p", [OtherError])
+    end,
+    loop(Pid, Port).
