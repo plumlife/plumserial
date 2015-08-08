@@ -129,8 +129,8 @@ int speed = 115200;
 int ttyfd = -1;
 
 /*named pipes stuff */
-char *bleTX_name = "/etc/init.d/bleTX.fifo";
-char *bleRX_name = "/etc/init.d/bleRX.fifo";
+char *bleTX_name = "/bleTX.fifo";
+char *bleRX_name = "/bleRX.fifo";
 int bleTX = -1;
 int bleRX = -1;
 
